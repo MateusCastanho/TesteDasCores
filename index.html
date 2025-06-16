@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste das Cores - Qual é a Cor do seu Cérebro?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease;
+        }
+        .card {
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .option-button.selected {
+            transform: scale(0.95);
+            opacity: 0.5;
+            box-shadow: none;
+        }
+        .option-button .rank-badge {
+            display: none;
+        }
+        .option-button.selected .rank-badge {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 transition-colors duration-500">
+
+    <div id="app" class="w-full max-w-2xl mx-auto">
+        
+        <!-- Tela Inicial -->
+        <div id="start-screen" class="card rounded-2xl p-8 shadow-2xl text-center">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Teste das Cores</h1>
+            <p class="text-gray-600 mb-6 text-lg">Descubra a cor da sua personalidade com este teste rápido.</p>
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Instruções</h2>
+            <p class="text-gray-600 mb-2">Para cada grupo de 4 palavras, clique nelas em ordem:</p>
+            <p class="text-gray-600 mb-8"><strong class="text-red-600">Primeiro clique:</strong> a que <strong class="underline">MAIS</strong> se parece com você (vale 4 pontos).<br><strong class="text-blue-600">Último clique:</strong> a que <strong class="underline">MENOS</strong> se parece com você (vale 1 ponto).</p>
+            
+            <button id="start-button" class="bg-indigo-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                Começar o Teste
+            </button>
+        </div>
+
+        <!-- Tela de Perguntas -->
+        <div id="question-screen" class="hidden">
+            <div id="question-header" class="text-center mb-6">
+                <p id="question-topic" class="text-xl font-semibold text-gray-700 mb-2"></p>
+                <p class="text-sm text-gray-500">Questão <span id="question-number">1</span> de 12</p>
+            </div>
+            <div class="progress-bar w-full bg-gray-300 rounded-full h-2.5 mb-8">
+                <div id="progress" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Opções serão inseridas aqui pelo JS -->
+            </div>
+            <div id="ranking-info" class="text-center mt-6 text-gray-600 font-semibold">
+                <span>Clique na palavra que <strong class="underline">MAIS</strong> te descreve.</span>
+            </div>
+        </div>
+        
+        <!-- Tela de Resultados -->
+        <div id="result-screen" class="hidden text-center">
+             <div class="card rounded-2xl p-8 md:p-12 shadow-2xl">
+                <p class="text-2xl font-semibold mb-2 text-gray-700">Sua cor é...</p>
+                <h1 id="result-color-name" class="text-6xl font-bold mb-6"></h1>
+                <div id="result-description" class="text-lg mb-8 text-gray-600"></div>
+                
+                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Pontuação Final</h2>
+                <div id="scores-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-white">
+                    <!-- Pontuações serão inseridas aqui -->
+                </div>
+
+                <button id="restart-button" class="mt-10 bg-white text-gray-800 font-bold py-3 px-8 rounded-lg shadow-md hover:bg-gray-200 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 ring-gray-300">
+                    Refazer o Teste
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Definição das perguntas e cores
+            const questions = [
+                { topic: "Eu sou:", options: { a: "organizado", b: "criativo", c: "independente", d: "impulsivo" } },
+                { topic: "Eu sou:", options: { a: "pontual", b: "comunicativo", c: "curioso", d: "divertido" } },
+                { topic: "Eu sou:", options: { a: "detalhista", b: "flexível", c: "calmo", d: "competitivo" } },
+                { topic: "Eu sou:", options: { a: "responsável", b: "atencioso", c: "analítico", d: "engenhoso" } },
+                { topic: "Eu sou:", options: { a: "comprometido", b: "sensível", c: "pensativo", d: "corajoso" } },
+                { topic: "Eu sou:", options: { a: "cuidadoso", b: "cooperativo", c: "técnico", d: "ativo" } },
+                { topic: "Eu sou:", options: { a: "disciplinado", b: "carinhoso", c: "independente", d: "ousado" } },
+                { topic: "Eu sou:", options: { a: "respeitoso", b: "autêntico", c: "competente", d: "generoso" } },
+                { topic: "Eu sou:", options: { a: "previsível", b: "protetor", c: "questionador", d: "espontâneo" } },
+                { topic: "Quando tomo decisões, eu gosto de:", options: { a: "ter um plano", b: "conversar com outras pessoas", c: "colher fatos, informações", d: "confiar nos meus instintos" } },
+                { topic: "Quando trabalho em equipe, me vejo como:", options: { a: "instrutor", b: "membro da equipe", c: "solucionador de problemas", d: "negociador de impasses" } },
+                { topic: "Sinto-me mais à vontade em ambientes que apoiam meu senso de:", options: { a: "estabilidade", b: "harmonia", c: "privacidade", d: "liberdade" } }
+            ];
+
+            const colorMapping = {
+                a: { name: "AMARELO", color: "#FBBF24", description: "Pessoas leais, responsáveis, respeitadoras e organizadas. Valorizam tradições, estabilidade e compromissos. Buscam sempre planejar." },
+                b: { name: "AZUL", color: "#3B82F6", description: "Pessoas criativas, comunicativas e que gostam de ajudar. Valorizam confiança, empatia e cooperação. São voltadas para a Emoção." },
+                c: { name: "VERDE", color: "#10B981", description: "Pessoas lógicas, que valorizam sabedoria, competência e independência. São pessoas reservadas. São voltadas para a Razão." },
+                d: { name: "LARANJA", color: "#F97316", description: "Representa pessoas enérgicas, corajosas. Valorizam empreendedorismo, desenvoltura e generosidade. São competitivas e adoram desafios." }
+            };
+
+            // Variáveis de estado
+            let currentQuestionIndex = 0;
+            let scores = { a: 0, b: 0, c: 0, d: 0 };
+            let currentQuestionAnswers = [];
+            let currentRank = 4; // << CORRIGIDO: Começa com 4
+
+            // Elementos da UI
+            const startScreen = document.getElementById('start-screen');
+            const questionScreen = document.getElementById('question-screen');
+            const resultScreen = document.getElementById('result-screen');
+            const startButton = document.getElementById('start-button');
+            const restartButton = document.getElementById('restart-button');
+            
+            const questionTopic = document.getElementById('question-topic');
+            const questionNumber = document.getElementById('question-number');
+            const progress = document.getElementById('progress');
+            const optionsContainer = document.getElementById('options-container');
+            const rankingInfo = document.getElementById('ranking-info');
+
+            // Funções
+            function startTest() {
+                currentQuestionIndex = 0;
+                scores = { a: 0, b: 0, c: 0, d: 0 };
+                startScreen.classList.add('hidden');
+                resultScreen.classList.add('hidden');
+                questionScreen.classList.remove('hidden');
+                document.body.className = 'bg-gray-100 flex items-center justify-center min-h-screen p-4 transition-colors duration-500';
+                loadQuestion();
+            }
+
+            function loadQuestion() {
+                currentQuestionAnswers = [];
+                currentRank = 4; // << CORRIGIDO: Reinicia com 4
+                updateRankingInfo();
+                
+                const question = questions[currentQuestionIndex];
+                questionTopic.textContent = question.topic;
+                questionNumber.textContent = currentQuestionIndex + 1;
+                progress.style.width = `${((currentQuestionIndex + 1) / questions.length) * 100}%`;
+                
+                optionsContainer.innerHTML = '';
+                Object.entries(question.options).forEach(([key, value]) => {
+                    const button = document.createElement('button');
+                    button.className = "option-button w-full p-6 rounded-lg shadow-md text-lg font-semibold text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 transform hover:-translate-y-1 relative";
+                    button.dataset.key = key;
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = value;
+                    button.appendChild(textSpan);
+
+                    const rankBadge = document.createElement('span');
+                    rankBadge.className = "rank-badge absolute -top-3 -right-3 bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 border-white";
+                    button.appendChild(rankBadge);
+
+                    button.addEventListener('click', () => handleOptionClick(button));
+                    optionsContainer.appendChild(button);
+                });
+            }
+
+            function handleOptionClick(button) {
+                if (button.classList.contains('selected')) return;
+
+                button.classList.add('selected');
+                const rankBadge = button.querySelector('.rank-badge');
+                rankBadge.textContent = currentRank;
+
+                currentQuestionAnswers.push({
+                    key: button.dataset.key,
+                    rank: currentRank
+                });
+
+                currentRank--; // << CORRIGIDO: Decrementa o rank
+                updateRankingInfo();
+
+                if (currentQuestionAnswers.length === 4) {
+                    processQuestionAnswers();
+                }
+            }
+            
+            function updateRankingInfo() {
+                // << CORRIGIDO: Textos para a nova ordem de pontuação
+                const rankTextMap = {
+                    4: "Clique na palavra que MAIS te descreve.",
+                    3: "Agora, a que mais se aproxima de você.",
+                    2: "Agora, a próxima que menos te descreve.",
+                    1: "Finalmente, a palavra que MENOS te descreve."
+                };
+
+                if (currentRank >= 1) {
+                    rankingInfo.innerHTML = `<span>${rankTextMap[currentRank]} <strong class="text-indigo-600">(Peso ${currentRank})</strong></span>`;
+                }
+            }
+
+            function processQuestionAnswers() {
+                currentQuestionAnswers.forEach(answer => {
+                    scores[answer.key] += answer.rank;
+                });
+                
+                rankingInfo.innerHTML = `<span class="text-green-600 font-bold">Ótimo! Próxima pergunta...</span>`;
+
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    if (currentQuestionIndex < questions.length) {
+                        loadQuestion();
+                    } else {
+                        showResults();
+                    }
+                }, 1000);
+            }
+
+            function showResults() {
+                questionScreen.classList.add('hidden');
+                
+                let maxScore = -1;
+                let resultKey = '';
+                // Encontra a maior pontuação
+                Object.entries(scores).forEach(([key, score]) => {
+                    if (score > maxScore) {
+                        maxScore = score;
+                        resultKey = key;
+                    }
+                });
+
+                const resultColor = colorMapping[resultKey];
+
+                document.body.style.backgroundColor = resultColor.color;
+                
+                document.getElementById('result-color-name').textContent = resultColor.name;
+                
+                // Melhora o contraste do título do resultado
+                if(resultColor.name === "AMARELO") {
+                    document.getElementById('result-color-name').style.color = '#ca8a04'; // Amarelo escuro
+                } else {
+                    document.getElementById('result-color-name').style.color = resultColor.color;
+                }
+
+                document.getElementById('result-description').textContent = resultColor.description;
+
+                const scoresContainer = document.getElementById('scores-container');
+                scoresContainer.innerHTML = '';
+                Object.entries(scores).forEach(([key, score]) => {
+                    const colorInfo = colorMapping[key];
+                    const scoreDiv = document.createElement('div');
+                    scoreDiv.className = 'p-4 rounded-lg shadow-md';
+                    scoreDiv.style.backgroundColor = colorInfo.color;
+                    scoreDiv.innerHTML = `
+                        <p class="font-bold text-xl">${colorInfo.name}</p>
+                        <p class="text-3xl font-bold">${score}</p>
+                    `;
+                    scoresContainer.appendChild(scoreDiv);
+                });
+
+                resultScreen.classList.remove('hidden');
+            }
+
+            // Event Listeners
+            startButton.addEventListener('click', startTest);
+            restartButton.addEventListener('click', startTest);
+        });
+    </script>
+</body>
+</html>
