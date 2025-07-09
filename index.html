@@ -30,16 +30,25 @@
         .option-button.selected .rank-badge {
             display: flex;
         }
+        .tab-button.active {
+            border-bottom-width: 4px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4 transition-colors duration-500">
 
-    <div id="app" class="w-full max-w-2xl mx-auto">
+    <div id="app" class="w-full max-w-4xl mx-auto">
         
         <!-- Tela Inicial -->
         <div id="start-screen" class="card rounded-2xl p-8 shadow-2xl text-center">
             <h1 class="text-4xl font-bold text-gray-800 mb-4">Teste das Cores</h1>
-            <p class="text-gray-600 mb-6 text-lg">Descubra a cor da sua personalidade com este teste rápido.</p>
+            <p class="text-gray-600 mb-6 text-lg">Descubra a cor da sua personalidade com este teste rápido e detalhado.</p>
             <h2 class="text-2xl font-semibold text-gray-700 mb-4">Instruções</h2>
             <p class="text-gray-600 mb-2">Para cada grupo de 4 palavras, clique nelas em ordem:</p>
             <p class="text-gray-600 mb-8"><strong class="text-red-600">Primeiro clique:</strong> a que <strong class="underline">MAIS</strong> se parece com você (vale 4 pontos).<br><strong class="text-blue-600">Último clique:</strong> a que <strong class="underline">MENOS</strong> se parece com você (vale 1 ponto).</p>
@@ -67,27 +76,55 @@
         </div>
         
         <!-- Tela de Resultados -->
-        <div id="result-screen" class="hidden text-center">
-             <div class="card rounded-2xl p-8 md:p-12 shadow-2xl">
-                <p class="text-2xl font-semibold mb-2 text-gray-700">Sua cor é...</p>
-                <h1 id="result-color-name" class="text-6xl font-bold mb-6"></h1>
-                <div id="result-description" class="text-lg mb-8 text-gray-600"></div>
-                
-                <h2 class="text-2xl font-semibold mb-4 text-gray-800">Pontuação Final</h2>
-                <div id="scores-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-white">
-                    <!-- Pontuações serão inseridas aqui -->
+        <div id="result-screen" class="hidden">
+             <div class="card rounded-2xl p-6 md:p-10 shadow-2xl text-left">
+                <div class="text-center mb-8">
+                    <p class="text-2xl font-semibold mb-2 text-gray-700">Sua cor é...</p>
+                    <h1 id="result-color-name" class="text-6xl font-bold mb-4"></h1>
+                    <p id="result-description" class="text-lg max-w-2xl mx-auto text-gray-600"></p>
                 </div>
 
-                <button id="restart-button" class="mt-10 bg-white text-gray-800 font-bold py-3 px-8 rounded-lg shadow-md hover:bg-gray-200 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 ring-gray-300">
-                    Refazer o Teste
-                </button>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Coluna de Detalhes -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 pb-2">Suas Características</h2>
+                        <ul id="result-details" class="space-y-3 text-gray-700">
+                            <!-- Detalhes da personalidade serão inseridos aqui -->
+                        </ul>
+                    </div>
+                    <!-- Coluna de Perspectivas -->
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 pb-2">Como você vê os outros?</h2>
+                        <div id="perspectives-container">
+                            <div id="perspective-tabs" class="flex border-b border-gray-300 mb-4">
+                                <!-- Abas das cores serão inseridas aqui -->
+                            </div>
+                            <div id="perspective-content" class="text-gray-700">
+                                <!-- Conteúdo das perspectivas será inserido aqui -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-10 pt-6 border-t">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 text-center">Pontuação Final</h2>
+                    <div id="scores-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 text-white">
+                        <!-- Pontuações serão inseridas aqui -->
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button id="restart-button" class="mt-10 bg-white text-gray-800 font-bold py-3 px-8 rounded-lg shadow-md hover:bg-gray-200 transition-transform transform hover:scale-105 focus:outline-none focus:ring-4 ring-gray-300">
+                        Refazer o Teste
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Definição das perguntas e cores
+            // Definição das perguntas
             const questions = [
                 { topic: "Eu sou:", options: { a: "organizado", b: "criativo", c: "independente", d: "impulsivo" } },
                 { topic: "Eu sou:", options: { a: "pontual", b: "comunicativo", c: "curioso", d: "divertido" } },
@@ -103,18 +140,111 @@
                 { topic: "Sinto-me mais à vontade em ambientes que apoiam meu senso de:", options: { a: "estabilidade", b: "harmonia", c: "privacidade", d: "liberdade" } }
             ];
 
+            // Definição das cores com detalhes e perspectivas (extraído do PDF)
             const colorMapping = {
-                a: { name: "AMARELO", color: "#FBBF24", description: "Pessoas leais, responsáveis, respeitadoras e organizadas. Valorizam tradições, estabilidade e compromissos. Buscam sempre planejar." },
-                b: { name: "AZUL", color: "#3B82F6", description: "Pessoas criativas, comunicativas e que gostam de ajudar. Valorizam confiança, empatia e cooperação. São voltadas para a Emoção." },
-                c: { name: "VERDE", color: "#10B981", description: "Pessoas lógicas, que valorizam sabedoria, competência e independência. São pessoas reservadas. São voltadas para a Razão." },
-                d: { name: "LARANJA", color: "#F97316", description: "Representa pessoas enérgicas, corajosas. Valorizam empreendedorismo, desenvoltura e generosidade. São competitivas e adoram desafios." }
+                a: { 
+                    name: "AMARELO", 
+                    color: "#FBBF24",
+                    textColor: "#92400E",
+                    description: "Pessoas leais, responsáveis, respeitadoras e organizadas. Valorizam tradições, estabilidade e compromissos. Buscam sempre planejar.",
+                    details: {
+                        "Vejo a mim mesmo como": "confiável, pontual e responsável.",
+                        "Sou naturalmente": "respeitoso, interessado.",
+                        "Eu valorizo": "tradição e estabilidade.",
+                        "Minha postura é": "ter um forte senso de certo e errado.",
+                        "Minhas prioridades são": "organização e disciplina.",
+                        "No trabalho, eu": "sou bem preparado, comprometido e detalhista.",
+                        "Nas relações, sou": "prático e sério.",
+                        "Os outros podem me ver como": "previsível, inflexível e controlador.",
+                        "O que me incomoda": "desorganização.",
+                        "Quando frustrado, posso me tornar": "ansioso e preocupado."
+                    },
+                    perspectives: {
+                        a: ["Organizado", "Confiável", "Leal", "Previsível", "Pontual", "Responsável"],
+                        b: ["Honesto", "Harmonioso", "Bondoso", "Sensível", "Trabalhador em equipe"],
+                        c: ["Distraído", "Franco", "Solucionador de problemas", "Reservado", "Independente"],
+                        d: ["Impulsivo", "Impaciente", "Divertido", "Oportunista", "Desorganizado"]
+                    }
+                },
+                b: { 
+                    name: "AZUL", 
+                    color: "#3B82F6",
+                    textColor: "#1E40AF",
+                    description: "Pessoas criativas, comunicativas e que gostam de ajudar. Valorizam confiança, empatia e cooperação. São voltadas para a Emoção.",
+                    details: {
+                        "Vejo a mim mesmo como": "prestativo, comunicativo e criativo.",
+                        "Sou naturalmente": "carinhoso, flexível e protetor.",
+                        "Eu valorizo": "honestidade e empatia.",
+                        "Minha postura é": "entusiástica e bondosa.",
+                        "Minhas prioridades são": "harmonia e abraços.",
+                        "No trabalho, eu": "sou motivador, dou sugestões e compartilho.",
+                        "Nas relações, sou": "atencioso e romântico.",
+                        "Os outros podem me ver como": "muito emotivo, falante e ingênuo.",
+                        "O que me incomoda": "falta de cooperação.",
+                        "Quando frustrado, posso me tornar": "resistente e até depressivo."
+                    },
+                    perspectives: {
+                        a: ["Organizado", "Muito disciplinado", "Rígido", "Objetivo", "Leal", "Tipo executivo"],
+                        b: ["Criativo", "Emotivo", "Intuitivo", "Protetor", "Comunicativo", "Confiável"],
+                        c: ["Inteligente demais", "Intimidante", "Acadêmico", "Frio", "Isolado", "Pouco comunicativo"],
+                        d: ["Irresponsável", "Corajoso", "Desorganizado", "Divertido", "Adaptável", "Pragmático"]
+                    }
+                },
+                c: { 
+                    name: "VERDE", 
+                    color: "#10B981",
+                    textColor: "#065F46",
+                    description: "Pessoas lógicas, que valorizam sabedoria, competência e independência. São pessoas reservadas e voltadas para a Razão.",
+                    details: {
+                        "Vejo a mim mesmo como": "lógico, inteligente e comedido.",
+                        "Sou naturalmente": "não-conformista e visionário.",
+                        "Eu valorizo": "conhecimento e eficiência.",
+                        "Minha postura é": "ser autossuficiente e justo.",
+                        "Minhas prioridades são": "independência e privacidade.",
+                        "No trabalho, eu": "sei utilizar a tecnologia mais recente.",
+                        "Nas relações, sou": "sensível, mas não confortável com emoções.",
+                        "Os outros podem me ver como": "realista, insensível e intimidante.",
+                        "O que me incomoda": "incompetência.",
+                        "Quando frustrado, eu": "retraio-me e posso me tornar indeciso."
+                    },
+                    perspectives: {
+                        a: ["Burocrático", "Controlador", "Metódico", "Organizado", "Confiável", "Planejador"],
+                        b: ["Emotivo", "Atencioso", "Focado nos relacionamentos", "Prestativo", "Idealista", "Criativo"],
+                        c: ["Produtivo", "Lógico", "Inovador", "Bem informado", "Preciso", "Eficiente"],
+                        d: ["Impulsivo", "Corajoso", "Espontâneo", "Irresponsável", "Gerador de ideias", "Agente transformador"]
+                    }
+                },
+                d: { 
+                    name: "LARANJA", 
+                    color: "#F97316",
+                    textColor: "#9A3412",
+                    description: "Representa pessoas enérgicas e corajosas. Valorizam empreendedorismo, desenvoltura e generosidade. São competitivas e adoram desafios.",
+                    details: {
+                        "Vejo a mim mesmo como": "dinâmico, generoso e espontâneo.",
+                        "Sou naturalmente": "bom negociador e diplomático.",
+                        "Eu valorizo": "aventura и diferentes habilidades.",
+                        "Minha postura é": "entusiástica e corajosa.",
+                        "Minhas prioridades são": "liberdade e diversão.",
+                        "No trabalho, eu sou": "empreendedor e competitivo.",
+                        "Nas relações, sou": "cheio de energia.",
+                        "Os outros podem me ver como": "desorganizado, teimoso e irresponsável.",
+                        "O que me incomoda": "regras e diretrizes de outra pessoa.",
+                        "Quando frustrado, eu": "'desisto' física e mentalmente."
+                    },
+                    perspectives: {
+                        a: ["Controlador", "Organizado", "Planejador", "Estruturado", "Teimoso", "Crítico"],
+                        b: ["Amistoso", "Sensível", "Romântico", "Criativo", "Atencioso", "Bom ouvinte"],
+                        c: ["Chato", "Ligado a fatos", "Intelectual", "Lento", "Analítico", "Insensível"],
+                        d: ["Decidido", "Capaz", "Rápido", "Influente", "Assume riscos", "Competente"]
+                    }
+                }
             };
 
             // Variáveis de estado
             let currentQuestionIndex = 0;
             let scores = { a: 0, b: 0, c: 0, d: 0 };
             let currentQuestionAnswers = [];
-            let currentRank = 4; // << CORRIGIDO: Começa com 4
+            let currentRank = 4;
 
             // Elementos da UI
             const startScreen = document.getElementById('start-screen');
@@ -136,13 +266,14 @@
                 startScreen.classList.add('hidden');
                 resultScreen.classList.add('hidden');
                 questionScreen.classList.remove('hidden');
+                document.body.style.backgroundColor = '';
                 document.body.className = 'bg-gray-100 flex items-center justify-center min-h-screen p-4 transition-colors duration-500';
                 loadQuestion();
             }
 
             function loadQuestion() {
                 currentQuestionAnswers = [];
-                currentRank = 4; // << CORRIGIDO: Reinicia com 4
+                currentRank = 4;
                 updateRankingInfo();
                 
                 const question = questions[currentQuestionIndex];
@@ -181,7 +312,7 @@
                     rank: currentRank
                 });
 
-                currentRank--; // << CORRIGIDO: Decrementa o rank
+                currentRank--;
                 updateRankingInfo();
 
                 if (currentQuestionAnswers.length === 4) {
@@ -190,12 +321,11 @@
             }
             
             function updateRankingInfo() {
-                // << CORRIGIDO: Textos para a nova ordem de pontuação
                 const rankTextMap = {
-                    4: "Clique na palavra que MAIS te descreve.",
+                    4: "Clique na palavra que <strong>MAIS</strong> te descreve.",
                     3: "Agora, a que mais se aproxima de você.",
                     2: "Agora, a próxima que menos te descreve.",
-                    1: "Finalmente, a palavra que MENOS te descreve."
+                    1: "Finalmente, a palavra que <strong>MENOS</strong> te descreve."
                 };
 
                 if (currentRank >= 1) {
@@ -225,7 +355,6 @@
                 
                 let maxScore = -1;
                 let resultKey = '';
-                // Encontra a maior pontuação
                 Object.entries(scores).forEach(([key, score]) => {
                     if (score > maxScore) {
                         maxScore = score;
@@ -235,22 +364,25 @@
 
                 const resultColor = colorMapping[resultKey];
 
+                // Atualiza cor de fundo e UI
                 document.body.style.backgroundColor = resultColor.color;
-                
                 document.getElementById('result-color-name').textContent = resultColor.name;
-                
-                // Melhora o contraste do título do resultado
-                if(resultColor.name === "AMARELO") {
-                    document.getElementById('result-color-name').style.color = '#ca8a04'; // Amarelo escuro
-                } else {
-                    document.getElementById('result-color-name').style.color = resultColor.color;
-                }
-
+                document.getElementById('result-color-name').style.color = resultColor.textColor;
                 document.getElementById('result-description').textContent = resultColor.description;
 
+                // Preenche os detalhes da personalidade
+                const detailsList = document.getElementById('result-details');
+                detailsList.innerHTML = '';
+                Object.entries(resultColor.details).forEach(([key, value]) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<strong class="font-semibold">${key}:</strong> ${value}`;
+                    detailsList.appendChild(li);
+                });
+
+                // Preenche as pontuações
                 const scoresContainer = document.getElementById('scores-container');
                 scoresContainer.innerHTML = '';
-                Object.entries(scores).forEach(([key, score]) => {
+                Object.entries(scores).sort(([,a],[,b]) => b-a).forEach(([key, score]) => {
                     const colorInfo = colorMapping[key];
                     const scoreDiv = document.createElement('div');
                     scoreDiv.className = 'p-4 rounded-lg shadow-md';
@@ -260,6 +392,68 @@
                         <p class="text-3xl font-bold">${score}</p>
                     `;
                     scoresContainer.appendChild(scoreDiv);
+                });
+                
+                // Preenche as perspectivas
+                const perspectiveTabs = document.getElementById('perspective-tabs');
+                const perspectiveContent = document.getElementById('perspective-content');
+                perspectiveTabs.innerHTML = '';
+                perspectiveContent.innerHTML = '';
+                
+                Object.keys(colorMapping).forEach((key, index) => {
+                    const colorInfo = colorMapping[key];
+                    // Cria a aba
+                    const tabButton = document.createElement('button');
+                    tabButton.textContent = colorInfo.name;
+                    tabButton.className = 'tab-button flex-1 py-2 px-1 text-sm md:text-base font-semibold border-b-2 transition-colors duration-300';
+                    tabButton.style.borderColor = 'transparent';
+                    tabButton.style.color = colorInfo.textColor;
+                    tabButton.dataset.target = `content-${key}`;
+                    
+                    if (key === resultKey) {
+                        tabButton.style.borderColor = colorInfo.textColor;
+                        tabButton.classList.add('active');
+                    }
+                    
+                    perspectiveTabs.appendChild(tabButton);
+
+                    // Cria o conteúdo da aba
+                    const contentDiv = document.createElement('div');
+                    contentDiv.id = `content-${key}`;
+                    contentDiv.className = 'tab-content p-4 bg-white/30 rounded-b-lg';
+                    if (key === resultKey) {
+                        contentDiv.classList.add('active');
+                    }
+                    
+                    const perspectiveList = document.createElement('ul');
+                    perspectiveList.className = 'list-disc list-inside space-y-1';
+                    
+                    const adjectives = resultColor.perspectives[key];
+                    adjectives.forEach(adj => {
+                        const li = document.createElement('li');
+                        li.textContent = adj;
+                        perspectiveList.appendChild(li);
+                    });
+
+                    contentDiv.appendChild(perspectiveList);
+                    perspectiveContent.appendChild(contentDiv);
+
+                    // Adiciona evento de clique na aba
+                    tabButton.addEventListener('click', () => {
+                        // Desativa todas as abas e conteúdos
+                        perspectiveTabs.querySelectorAll('.tab-button').forEach(btn => {
+                            btn.classList.remove('active');
+                            btn.style.borderColor = 'transparent';
+                        });
+                        perspectiveContent.querySelectorAll('.tab-content').forEach(content => {
+                            content.classList.remove('active');
+                        });
+                        
+                        // Ativa a aba e conteúdo clicado
+                        tabButton.classList.add('active');
+                        tabButton.style.borderColor = colorInfo.textColor;
+                        document.getElementById(tabButton.dataset.target).classList.add('active');
+                    });
                 });
 
                 resultScreen.classList.remove('hidden');
